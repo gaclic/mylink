@@ -1,0 +1,15 @@
+feat(ui): 프로필 페이지 Neobrutalism 랜딩 레이아웃 전면 개편
+
+[주요 변경 사항]
+- app/page.tsx: 데스크탑 사이즈 중심의 전체 랜딩 페이지 구조 도입
+  - 기존 투명/글래스 스타일링 및 프로필 이미지 섹션 완전 제거 
+  - 굵은 테두리(border-black), 하드 쉐도우를 적용하여 Neobrutalism 스타일 구축
+  - 텍스트 영역을 전체 폭 중앙 정렬(Flexbox) 기반으로 배치하여 시원하고 꽉 찬 밸런스 유지
+  - 데스크탑 중심 시각 효과를 유지하되 태블릿/모바일 축소 시 UI가 무너지지 않도록 반응형 구현
+  - Neobrutalism 포인트 컬러 (Pink, LightBlue, Yellow) 적용
+  - 불필요해진 next/image 모듈 임포트 제거
+- app/globals.css:
+  - Base Layout 백그라운드를 강렬한 옐로우 톤(#FFE26F)으로, 폰트 컬러를 올블랙(#000000)으로 강제 세팅
+
+[빌드 검증]
+- Next.js 프로덕션 빌드 (npm run build) 오류 없이 정적 페이지 최적화 완료
