@@ -9,28 +9,54 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+
+const formSchema = z.object({
+  title: z.string().trim().min(1, { message: "링크 제목을 입력해주세요." }),
+  url: z.string().trim().min(1, { message: "URL 주소를 입력해주세요." })
+    .transform((val) => {
+      // http / https 프로토콜 추가 보정
+      if (!val.startsWith("http://") && !val.startsWith("https://")) {
+        return `https://${val}`;
+      }
+      return val;
+    })
+    .refine((val) => {
+      // 올바른 URL 형식인지 파싱 테스트
+      try {
+        new URL(val);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }, { message: "올바른 URL 형식을 입력해주세요. (예: https://...)" }),
+});
+
 export default function Page() {
   const [links, setLinks] = useState<LinkType[]>(dummyLinks);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newUrl, setNewUrl] = useState("");
 
-  const handleAddLink = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newUrl.trim()) return;
+  // React Hook Form 초기화
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      url: "",
+    },
+  });
 
-    // URL 형식 확인 (간단한 처리: http/https가 없으면 추가)
-    const formattedUrl = newUrl.startsWith('http') ? newUrl : `https://${newUrl}`;
-
+  // 서브밋 로직
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
     const newLink: LinkType = {
       id: Date.now().toString(),
-      title: newTitle,
-      url: formattedUrl,
+      title: values.title,
+      url: values.url,
     };
 
     setLinks([...links, newLink]);
-    setNewTitle("");
-    setNewUrl("");
+    reset();
     setIsDialogOpen(false);
   };
 
@@ -58,7 +84,13 @@ export default function Page() {
 
         {/* Add Link Button */}
         <div className="w-full mb-6">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            // 닫힐 때 폼 초기화 (취소 시 재진입 시 쓰레기값 방지)
+            if (!open) {
+              reset();
+            }
+          }}>
             <DialogTrigger render={
               <Button className="w-full rounded-2xl h-12 shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
                 <Plus className="w-5 h-5 mr-2" />
@@ -69,43 +101,41 @@ export default function Page() {
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold">링크 추가</DialogTitle>
               </DialogHeader>
-              <div className="flex flex-col gap-5 mt-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 mt-4">
                 <div className="flex flex-col gap-2 relative">
                   <Label htmlFor="title" className="font-semibold text-zinc-700 dark:text-zinc-300">
                     링크 제목
                   </Label>
-                  <Input
+                  <Input 
                     id="title"
-                    placeholder="예: 내 포트폴리오 빙글 빙글"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="h-12 px-4 rounded-xl border-zinc-200 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"
-                    autoFocus
+                    placeholder="예: 내 포트폴리오 빙글 빙글" 
+                    className={`h-12 px-4 rounded-xl focus-visible:ring-indigo-500 dark:bg-zinc-800 ${errors.title ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`} 
+                    autoFocus 
+                    {...register("title")} 
                   />
+                  {errors.title && <p className="text-sm font-medium text-red-500">{errors.title.message as string}</p>}
                 </div>
                 <div className="flex flex-col gap-2 relative">
                   <Label htmlFor="url" className="font-semibold text-zinc-700 dark:text-zinc-300">
                     URL 주소
                   </Label>
-                  <Input
+                  <Input 
                     id="url"
-                    type="url"
-                    placeholder="예: https://example.com"
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    className="h-12 px-4 rounded-xl border-zinc-200 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"
+                    type="text"
+                    placeholder="예: https://example.com" 
+                    className={`h-12 px-4 rounded-xl focus-visible:ring-indigo-500 dark:bg-zinc-800 ${errors.url ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`} 
+                    {...register("url")} 
                   />
+                  {errors.url && <p className="text-sm font-medium text-red-500">{errors.url.message as string}</p>}
                 </div>
                 <Button 
-                  type="button" 
-                  onClick={(e) => handleAddLink(e as any)}
-                  disabled={!newTitle.trim() || !newUrl.trim()}
+                  type="submit" 
                   className="mt-2 h-12 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   리스트에 추가하기
                 </Button>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
