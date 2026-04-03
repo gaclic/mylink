@@ -1,7 +1,39 @@
+"use client";
+
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { dummyLinks } from "@/data/links";
+import { dummyLinks, Link as LinkType } from "@/data/links";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function Page() {
+  const [links, setLinks] = useState<LinkType[]>(dummyLinks);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+
+  const handleAddLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newUrl.trim()) return;
+
+    // URL 형식 확인 (간단한 처리: http/https가 없으면 추가)
+    const formattedUrl = newUrl.startsWith('http') ? newUrl : `https://${newUrl}`;
+
+    const newLink: LinkType = {
+      id: Date.now().toString(),
+      title: newTitle,
+      url: formattedUrl,
+    };
+
+    setLinks([...links, newLink]);
+    setNewTitle("");
+    setNewUrl("");
+    setIsDialogOpen(false);
+  };
+
   return (
     <main className="flex min-h-svh flex-col items-center py-20 px-6 bg-gradient-to-br from-indigo-50 via-white to-sky-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 overflow-hidden relative">
       {/* Background Decorative Blob */}
@@ -24,10 +56,68 @@ export default function Page() {
           </p>
         </div>
 
+        {/* Add Link Button */}
+        <div className="w-full mb-6">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger render={
+              <Button className="w-full rounded-2xl h-12 shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
+                <Plus className="w-5 h-5 mr-2" />
+                새로운 링크 추가하기
+              </Button>
+            } />
+            <DialogContent className="sm:max-w-md rounded-2xl border-white/40 dark:border-zinc-800/50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">링크 추가</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddLink} className="flex flex-col gap-5 mt-4">
+                <div className="flex flex-col gap-2 relative">
+                  <Label htmlFor="title" className="font-semibold text-zinc-700 dark:text-zinc-300">
+                    링크 제목
+                  </Label>
+                  <Input
+                    id="title"
+                    placeholder="예: 내 포트폴리오 빙글 빙글"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="h-12 px-4 rounded-xl border-zinc-200 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex flex-col gap-2 relative">
+                  <Label htmlFor="url" className="font-semibold text-zinc-700 dark:text-zinc-300">
+                    URL 주소
+                  </Label>
+                  <Input
+                    id="url"
+                    type="url"
+                    placeholder="예: https://example.com"
+                    value={newUrl}
+                    onChange={(e) => setNewUrl(e.target.value)}
+                    className="h-12 px-4 rounded-xl border-zinc-200 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  disabled={!newTitle.trim() || !newUrl.trim()}
+                  className="mt-2 h-12 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  리스트에 추가하기
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
         {/* Links Section */}
         <div className="w-full flex flex-col gap-4">
-          {dummyLinks.map((link, index) => {
-            const domain = new URL(link.url).hostname;
+          {links.map((link, index) => {
+            let domain = "";
+            try {
+              domain = new URL(link.url).hostname;
+            } catch (e) {
+              domain = "example.com";
+            }
             // 구글 파비콘 API 사용
             const faviconUrl = `https://s2.googleusercontent.com/s2/favicons?domain=${domain}&sz=64`;
 
@@ -37,12 +127,12 @@ export default function Page() {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 rounded-2xl"
+                className="block w-full outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 rounded-2xl group"
                 style={{
                   animation: `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1 + 0.3}s both`,
                 }}
               >
-                <Card className="group relative overflow-hidden w-full p-4 flex items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-white/40 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-2xl">
+                <Card className="relative overflow-hidden w-full p-4 flex items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-white/40 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-2xl">
                   {/* Hover Graphic */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-zinc-700/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                   
@@ -52,6 +142,9 @@ export default function Page() {
                       src={faviconUrl}
                       alt={`${link.title} icon`}
                       className="w-6 h-6 object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+                      }}
                     />
                   </div>
 
