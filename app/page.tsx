@@ -69,7 +69,7 @@ export default function Page() {
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold">링크 추가</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddLink} className="flex flex-col gap-5 mt-4">
+              <div className="flex flex-col gap-5 mt-4">
                 <div className="flex flex-col gap-2 relative">
                   <Label htmlFor="title" className="font-semibold text-zinc-700 dark:text-zinc-300">
                     링크 제목
@@ -97,14 +97,15 @@ export default function Page() {
                   />
                 </div>
                 <Button 
-                  type="submit" 
+                  type="button" 
+                  onClick={(e) => handleAddLink(e as any)}
                   disabled={!newTitle.trim() || !newUrl.trim()}
                   className="mt-2 h-12 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   리스트에 추가하기
                 </Button>
-              </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
