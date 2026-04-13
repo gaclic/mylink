@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Link as LinkType } from "@/data/links";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,19 +39,27 @@ const formSchema = z.object({
 export default function Page() {
   const [links, setLinks] = useState<LinkType[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, "users", "anonymous", "links"), orderBy("createdAt", "asc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedLinks = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as LinkType[];
-      setLinks(fetchedLinks);
-    }, (error) => {
-      console.error("Firestore error:", error);
-    });
-    return () => unsubscribe();
+    const fetchLinks = async () => {
+      setIsLoading(true);
+      try {
+        const q = query(collection(db, "users", "anonymous", "links"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        const fetchedLinks = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as LinkType[];
+        setLinks(fetchedLinks);
+      } catch (error) {
+        console.error("Firestore error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLinks();
   }, []);
 
   // React Hook Form 초기화
@@ -65,16 +73,28 @@ export default function Page() {
 
   // 서브밋 로직
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "users", "anonymous", "links"), {
+      const docRef = await addDoc(collection(db, "users", "anonymous", "links"), {
         title: values.title,
         url: values.url,
         createdAt: serverTimestamp(),
       });
+      
+      const newLink: LinkType = {
+        id: docRef.id,
+        title: values.title,
+        url: values.url,
+      };
+      
+      setLinks((prev) => [newLink, ...prev]);
+      
       reset();
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Error adding document: ", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -148,10 +168,15 @@ export default function Page() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="mt-2 h-12 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md"
+                  disabled={isSubmitting}
+                  className="mt-2 h-12 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md disabled:opacity-70"
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  리스트에 추가하기
+                  {isSubmitting ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Plus className="w-5 h-5 mr-2" />
+                  )}
+                  {isSubmitting ? "추가하는 중..." : "리스트에 추가하기"}
                 </Button>
               </form>
             </DialogContent>
@@ -160,56 +185,64 @@ export default function Page() {
 
         {/* Links Section */}
         <div className="w-full flex flex-col gap-4">
-          {links.map((link, index) => {
-            let domain = "";
-            try {
-              domain = new URL(link.url).hostname;
-            } catch (e) {
-              domain = "example.com";
-            }
-            // 구글 파비콘 API 사용
-            const faviconUrl = `https://s2.googleusercontent.com/s2/favicons?domain=${domain}&sz=64`;
+          {isLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            </div>
+          ) : links.length === 0 ? (
+            <div className="text-center p-8 text-zinc-500 dark:text-zinc-400">아직 추가된 링크가 없습니다.</div>
+          ) : (
+            links.map((link, index) => {
+              let domain = "";
+              try {
+                domain = new URL(link.url).hostname;
+              } catch (e) {
+                domain = "example.com";
+              }
+              // 구글 파비콘 API 사용
+              const faviconUrl = `https://s2.googleusercontent.com/s2/favicons?domain=${domain}&sz=64`;
 
-            return (
-              <a
-                key={link.id}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 rounded-2xl group"
-                style={{
-                  animation: `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1 + 0.3}s both`,
-                }}
-              >
-                <Card className="relative overflow-hidden w-full p-4 flex items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-white/40 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-2xl">
-                  {/* Hover Graphic */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-zinc-700/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                  
-                  {/* Favicon */}
-                  <div className="relative z-10 w-12 flex justify-center">
-                    <img
-                      src={faviconUrl}
-                      alt={`${link.title} icon`}
-                      className="w-6 h-6 object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
-                      }}
-                    />
-                  </div>
+              return (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 rounded-2xl group"
+                  style={{
+                    animation: `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both`,
+                  }}
+                >
+                  <Card className="relative overflow-hidden w-full p-4 flex items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-white/40 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-2xl">
+                    {/* Hover Graphic */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-zinc-700/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                    
+                    {/* Favicon */}
+                    <div className="relative z-10 w-12 flex justify-center">
+                      <img
+                        src={faviconUrl}
+                        alt={`${link.title} icon`}
+                        className="w-6 h-6 object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+                        }}
+                      />
+                    </div>
 
-                  {/* Title */}
-                  <span className="relative z-10 flex-1 text-center font-semibold text-[15px] tracking-wide text-zinc-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    {link.title}
-                  </span>
+                    {/* Title */}
+                    <span className="relative z-10 flex-1 text-center font-semibold text-[15px] tracking-wide text-zinc-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      {link.title}
+                    </span>
 
-                  {/* Right padding balancer to keep text dead-center */}
-                  <div className="w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-indigo-400 dark:text-indigo-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </div>
-                </Card>
-              </a>
-            );
-          })}
+                    {/* Right padding balancer to keep text dead-center */}
+                    <div className="w-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-indigo-400 dark:text-indigo-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </div>
+                  </Card>
+                </a>
+              );
+            })
+          )}
         </div>
       </div>
 
