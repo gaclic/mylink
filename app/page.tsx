@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { dummyLinks, Link as LinkType } from "@/data/links";
+import { Link as LinkType } from "@/data/links";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,8 +37,22 @@ const formSchema = z.object({
 });
 
 export default function Page() {
-  const [links, setLinks] = useState<LinkType[]>(dummyLinks);
+  const [links, setLinks] = useState<LinkType[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const q = query(collection(db, "users", "anonymous", "links"), orderBy("createdAt", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedLinks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as LinkType[];
+      setLinks(fetchedLinks);
+    }, (error) => {
+      console.error("Firestore error:", error);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // React Hook Form 초기화
   const { register, handleSubmit, formState: { errors }, reset } = useForm<z.infer<typeof formSchema>>({
@@ -48,16 +64,18 @@ export default function Page() {
   });
 
   // 서브밋 로직
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    const newLink: LinkType = {
-      id: Date.now().toString(),
-      title: values.title,
-      url: values.url,
-    };
-
-    setLinks([...links, newLink]);
-    reset();
-    setIsDialogOpen(false);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      await addDoc(collection(db, "users", "anonymous", "links"), {
+        title: values.title,
+        url: values.url,
+        createdAt: serverTimestamp(),
+      });
+      reset();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding document: ", error);
+    }
   };
 
   return (
