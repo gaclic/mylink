@@ -53,6 +53,7 @@ const LinkCardItem = ({
       await updateDoc(linkRef, {
         title: values.title,
         url: values.url,
+        updatedAt: serverTimestamp(),
       });
       onUpdateLink(link.id, values.title, values.url);
       setIsEditing(false);
