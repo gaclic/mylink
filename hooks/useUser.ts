@@ -32,16 +32,20 @@ export function useUser() {
           userProfileData = userSnap.data() as UserProfile;
         } else {
           // Create new user profile document
-          // Using email handle as default username
+          // Using email handle as default username and displayName
           let defaultUsername = currentUser.uid;
+          let defaultDisplayName = currentUser.displayName || "User";
+
           if (currentUser.email) {
-            defaultUsername = currentUser.email.split("@")[0] + "_" + Math.floor(Math.random() * 1000);
+            const emailPrefix = currentUser.email.split("@")[0];
+            defaultUsername = emailPrefix + "_" + Math.floor(Math.random() * 1000);
+            defaultDisplayName = emailPrefix;
           }
 
           userProfileData = {
             uid: currentUser.uid,
             email: currentUser.email,
-            displayName: currentUser.displayName,
+            displayName: defaultDisplayName,
             photoURL: currentUser.photoURL,
             username: defaultUsername,
             bio: "환영합니다! 이곳에 소개글을 작성할 수 있어요. ✎",
