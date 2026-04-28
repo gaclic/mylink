@@ -14,6 +14,8 @@ import { Plus, Loader2, Pencil, Trash2, X, Check } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useUser } from "@/hooks/useUser";
+import { LandingPage } from "@/components/LandingPage";
 
 const formSchema = z.object({
   title: z.string().trim().min(1, { message: "링크 제목을 입력해주세요." }),
@@ -22,14 +24,16 @@ const formSchema = z.object({
     .url({ message: "올바른 URL 형식을 입력해주세요. (예: https://...)" }),
 });
 
-const LinkCardItem = ({ 
-  link, 
+const LinkCardItem = ({
+  link,
   index,
+  uid,
   onUpdateLink,
   onDeleteLink
-}: { 
-  link: LinkType; 
+}: {
+  link: LinkType;
   index: number;
+  uid: string;
   onUpdateLink: (id: string, newTitle: string, newUrl: string) => void;
   onDeleteLink: (id: string) => void;
 }) => {
@@ -49,7 +53,7 @@ const LinkCardItem = ({
   const onUpdateSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsUpdating(true);
     try {
-      const linkRef = doc(db, "users", "anonymous", "links", link.id);
+      const linkRef = doc(db, "users", uid, "links", link.id);
       await updateDoc(linkRef, {
         title: values.title,
         url: values.url,
@@ -67,7 +71,7 @@ const LinkCardItem = ({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const linkRef = doc(db, "users", "anonymous", "links", link.id);
+      const linkRef = doc(db, "users", uid, "links", link.id);
       await deleteDoc(linkRef);
       onDeleteLink(link.id);
       setIsDeleteModalOpen(false);
@@ -123,9 +127,9 @@ const LinkCardItem = ({
           <Button type="button" variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting} className="rounded-xl border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
             취소
           </Button>
-          <Button 
-            variant="destructive" 
-            onClick={handleDelete} 
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
             disabled={isDeleting}
             className="rounded-xl font-semibold shadow-sm min-w-[80px]"
           >
@@ -138,7 +142,7 @@ const LinkCardItem = ({
 
   if (isEditing) {
     return (
-      <div 
+      <div
         className="block w-full outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 rounded-2xl group"
         style={{ animation: `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both` }}
       >
@@ -146,7 +150,7 @@ const LinkCardItem = ({
           <form onSubmit={handleSubmit(onUpdateSubmit)} className="w-full flex-col flex gap-4">
             <div className="flex gap-4 items-start w-full">
               <div className="relative z-10 flex justify-center pt-2">
-                 {/* Empty avatar space or favicon display. A small favicon is okay */}
+                {/* Empty avatar space or favicon display. A small favicon is okay */}
                 <img
                   src={faviconUrl}
                   alt={`${link.title} icon`}
@@ -158,30 +162,30 @@ const LinkCardItem = ({
               </div>
               <div className="flex-1 flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <Input 
-                    placeholder="링크 제목" 
-                    className={`h-10 px-3 rounded-lg dark:bg-zinc-800 ${errors.title ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`} 
-                    autoFocus 
-                    {...register("title")} 
+                  <Input
+                    placeholder="링크 제목"
+                    className={`h-10 px-3 rounded-lg dark:bg-zinc-800 ${errors.title ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`}
+                    autoFocus
+                    {...register("title")}
                   />
                   {errors.title && <p className="text-xs text-red-500 font-medium px-1">{errors.title.message as string}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Input 
+                  <Input
                     type="text"
-                    placeholder="URL 주소 (https://...)" 
-                    className={`h-10 px-3 rounded-lg dark:bg-zinc-800 ${errors.url ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`} 
-                    {...register("url")} 
+                    placeholder="URL 주소 (https://...)"
+                    className={`h-10 px-3 rounded-lg dark:bg-zinc-800 ${errors.url ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`}
+                    {...register("url")}
                   />
                   {errors.url && <p className="text-xs text-red-500 font-medium px-1">{errors.url.message as string}</p>}
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-end gap-2 w-full border-t border-zinc-100 dark:border-zinc-800 pt-3">
-              <Button 
-                type="button" 
-                variant="ghost" 
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={handleCancelEdit}
                 disabled={isUpdating}
                 className="rounded-lg h-9 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
@@ -189,8 +193,8 @@ const LinkCardItem = ({
                 <X className="w-4 h-4 mr-1" />
                 취소
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isUpdating}
                 className="rounded-lg h-9 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm font-semibold disabled:opacity-70 min-w-[64px]"
               >
@@ -223,7 +227,7 @@ const LinkCardItem = ({
         <Card className="relative overflow-hidden w-full p-4 flex items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-white/40 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-2xl pr-2">
           {/* Hover Graphic */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-zinc-700/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-          
+
           {/* Favicon */}
           <div className="relative z-10 w-12 flex justify-center shrink-0">
             <img
@@ -245,20 +249,20 @@ const LinkCardItem = ({
 
           {/* Action Buttons */}
           <div className="relative z-10 flex items-center gap-1 shrink-0 bg-white/50 dark:bg-zinc-800/50 sm:bg-transparent sm:dark:bg-transparent p-1 rounded-xl shadow-sm sm:shadow-none backdrop-blur-sm sm:backdrop-blur-none transition-colors">
-            <Button 
+            <Button
               type="button"
-              variant="ghost" 
-              size="icon" 
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 rounded-lg text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/30"
               onClick={handleEditClick}
               title="수정하기"
             >
               <Pencil className="w-4 h-4" />
             </Button>
-            <Button 
+            <Button
               type="button"
-              variant="ghost" 
-              size="icon" 
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 rounded-lg text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
               onClick={handleDeleteClick}
               title="삭제하기"
@@ -273,16 +277,21 @@ const LinkCardItem = ({
 };
 
 export default function Page() {
+  const { user, profile, isLoading: isUserLoading } = useUser();
   const [links, setLinks] = useState<LinkType[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      setLinks([]);
+      return;
+    }
     const fetchLinks = async () => {
       setIsLoading(true);
       try {
-        const q = query(collection(db, "users", "anonymous", "links"), orderBy("createdAt", "desc"));
+        const q = query(collection(db, "users", user.uid, "links"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
         const fetchedLinks = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -296,7 +305,7 @@ export default function Page() {
       }
     };
     fetchLinks();
-  }, []);
+  }, [user]);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -307,22 +316,23 @@ export default function Page() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!user) return;
     setIsSubmitting(true);
     try {
-      const docRef = await addDoc(collection(db, "users", "anonymous", "links"), {
+      const docRef = await addDoc(collection(db, "users", user.uid, "links"), {
         title: values.title,
         url: values.url,
         createdAt: serverTimestamp(),
       });
-      
+
       const newLink: LinkType = {
         id: docRef.id,
         title: values.title,
         url: values.url,
       };
-      
+
       setLinks((prev) => [newLink, ...prev]);
-      
+
       reset();
       setIsDialogOpen(false);
     } catch (error) {
@@ -340,25 +350,38 @@ export default function Page() {
     setLinks(prev => prev.filter(link => link.id !== id));
   };
 
+  if (isUserLoading) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-sky-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  if (!user || !profile) {
+    return <LandingPage />;
+  }
+
   return (
-    <main className="flex min-h-svh flex-col items-center py-20 px-6 bg-gradient-to-br from-indigo-50 via-white to-sky-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 overflow-hidden relative">
+    <main className="flex min-h-svh flex-col items-center py-10 px-6 bg-gradient-to-br from-indigo-50 via-white to-sky-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 overflow-hidden relative">
       {/* Background Decorative Blob */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-300/20 dark:bg-indigo-900/10 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob" />
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-300/20 dark:bg-purple-900/10 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000" />
-      
+
       <div className="w-full max-w-md flex flex-col items-center relative z-10">
         {/* Profile Section */}
         <div className="flex flex-col items-center mb-10 w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
           <img
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=MyLinkProfile"
+            src={profile.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`}
             alt="Profile Avatar"
             className="w-24 h-24 rounded-full shadow-lg border-4 border-white dark:border-zinc-800 object-cover bg-indigo-100 dark:bg-zinc-800"
+            referrerPolicy="no-referrer"
           />
-          <h1 className="mt-5 text-2xl tracking-tight font-extrabold text-zinc-900 dark:text-zinc-50">
-            @MyLink_Creator
+          <h1 className="mt-5 text-2xl tracking-tight font-extrabold text-zinc-900 dark:text-zinc-50 flex items-center justify-center gap-2">
+            {profile.displayName || `@${profile.username}`}
           </h1>
-          <p className="mt-2 text-zinc-500 dark:text-zinc-400 text-center text-sm font-medium px-4 leading-relaxed">
-            프론트엔드 엔지니어 & 크리에이터. <br /> 저의 다양한 채널을 한곳에서 만나보세요! 👇
+          <p className="mt-2 text-zinc-500 dark:text-zinc-400 text-center text-sm font-medium px-4 leading-relaxed whitespace-pre-wrap">
+            {profile.bio}
           </p>
         </div>
 
@@ -385,12 +408,12 @@ export default function Page() {
                   <Label htmlFor="title" className="font-semibold text-zinc-700 dark:text-zinc-300">
                     링크 제목
                   </Label>
-                  <Input 
+                  <Input
                     id="title"
-                    placeholder="예: 내 포트폴리오 빙글 빙글" 
-                    className={`h-12 px-4 rounded-xl focus-visible:ring-indigo-500 dark:bg-zinc-800 ${errors.title ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`} 
-                    autoFocus 
-                    {...register("title")} 
+                    placeholder="예: 내 포트폴리오 빙글 빙글"
+                    className={`h-12 px-4 rounded-xl focus-visible:ring-indigo-500 dark:bg-zinc-800 ${errors.title ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`}
+                    autoFocus
+                    {...register("title")}
                   />
                   {errors.title && <p className="text-sm font-medium text-red-500">{errors.title.message as string}</p>}
                 </div>
@@ -398,17 +421,17 @@ export default function Page() {
                   <Label htmlFor="url" className="font-semibold text-zinc-700 dark:text-zinc-300">
                     URL 주소
                   </Label>
-                  <Input 
+                  <Input
                     id="url"
                     type="text"
-                    placeholder="예: https://example.com" 
-                    className={`h-12 px-4 rounded-xl focus-visible:ring-indigo-500 dark:bg-zinc-800 ${errors.url ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`} 
-                    {...register("url")} 
+                    placeholder="예: https://example.com"
+                    className={`h-12 px-4 rounded-xl focus-visible:ring-indigo-500 dark:bg-zinc-800 ${errors.url ? 'border-red-500 focus-visible:ring-red-500' : 'border-zinc-200 dark:border-zinc-700'}`}
+                    {...register("url")}
                   />
                   {errors.url && <p className="text-sm font-medium text-red-500">{errors.url.message as string}</p>}
                 </div>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSubmitting}
                   className="mt-2 h-12 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md disabled:opacity-70"
                 >
@@ -436,10 +459,11 @@ export default function Page() {
             <div className="text-center p-8 text-zinc-500 dark:text-zinc-400">아직 추가된 링크가 없습니다.</div>
           ) : (
             links.map((link, index) => (
-              <LinkCardItem 
+              <LinkCardItem
                 key={link.id}
                 link={link}
                 index={index}
+                uid={user.uid}
                 onUpdateLink={handleUpdateLink}
                 onDeleteLink={handleDeleteLink}
               />

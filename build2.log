@@ -1,0 +1,54 @@
+
+> my-link-app@0.0.1 build
+> next build
+
+▲ Next.js 16.1.7 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 2 errors:
+./app/globals.css:3:2
+Module not found: Can't resolve 'shadcn/dist/tailwind.css'
+[0m [90m 1 |[39m [33m@[39m[36mimport[39m [32m"tailwindcss"[39m[33m;[39m
+ [90m 2 |[39m [33m@[39m[36mimport[39m [32m"tw-animate-css/dist/tw-animate.css"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [33m@[39m[36mimport[39m [32m"shadcn/dist/tailwind.css"[39m[33m;[39m
+ [90m   |[39m  [31m[1m^[22m[39m
+ [90m 4 |[39m
+ [90m 5 |[39m [33m@[39mcustom[33m-[39mvariant dark ([33m&[39m[33m:[39mis([33m.[39mdark [33m*[39m))[33m;[39m
+ [90m 6 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./app/globals.css [Client Component Browser]
+    ./app/layout.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/globals.css:2:2
+Module not found: Can't resolve 'tw-animate-css/dist/tw-animate.css'
+[0m [90m 1 |[39m [33m@[39m[36mimport[39m [32m"tailwindcss"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 2 |[39m [33m@[39m[36mimport[39m [32m"tw-animate-css/dist/tw-animate.css"[39m[33m;[39m
+ [90m   |[39m  [31m[1m^[22m[39m
+ [90m 3 |[39m [33m@[39m[36mimport[39m [32m"shadcn/dist/tailwind.css"[39m[33m;[39m
+ [90m 4 |[39m
+ [90m 5 |[39m [33m@[39mcustom[33m-[39mvariant dark ([33m&[39m[33m:[39mis([33m.[39mdark [33m*[39m))[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./app/globals.css [Client Component Browser]
+    ./app/layout.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./app/globals.css:3:2)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./app/globals.css:2:2)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
