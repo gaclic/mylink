@@ -4,6 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/ui/Header";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -27,6 +28,7 @@ export default function RootLayout({
         <ThemeProvider>
           <Header />
           {children}
+          <Toaster position="top-center" />
         </ThemeProvider>
       </body>
     </html>
