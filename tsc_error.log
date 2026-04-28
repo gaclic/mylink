@@ -1,0 +1,8 @@
+
+> my-link-app@0.0.1 typecheck
+> tsc --noEmit
+
+components/LandingPage.tsx(4,17): error TS2305: Module '"lucide-react"' has no exported member 'Instagram'.
+components/LandingPage.tsx(4,28): error TS2305: Module '"lucide-react"' has no exported member 'Twitter'.
+components/LandingPage.tsx(4,37): error TS2305: Module '"lucide-react"' has no exported member 'Github'.
+components/LandingPage.tsx(4,45): error TS2305: Module '"lucide-react"' has no exported member 'Linkedin'.

@@ -129,7 +129,7 @@ export function Header() {
                   className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm"
                 >
                   <LinkIcon className="w-4 h-4 mr-1" />
-                  시작하기
+                  로그인
                 </Button>
               )}
             </>
