@@ -38,8 +38,7 @@ export function useUser() {
 
           if (currentUser.email) {
             const emailPrefix = currentUser.email.split("@")[0];
-            defaultUsername = emailPrefix + "_" + Math.floor(Math.random() * 1000);
-            defaultDisplayName = emailPrefix;
+            defaultUsername = emailPrefix;
           }
 
           userProfileData = {
