@@ -9,6 +9,7 @@ import { LinkIcon, LogOut, ExternalLink, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,8 @@ export function Header() {
   const { data: profile, isLoading: isProfileLoading } = useProfileQuery(user);
   const isLoading = isAuthLoading || isProfileLoading;
   const { theme, setTheme } = useTheme();
+  const pathname = usePathname();
+  const isVisitorPage = pathname !== "/";
   
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -47,7 +50,7 @@ export function Header() {
 
   const handleCopyLink = () => {
     if (!profile) return;
-    const url = `${window.location.origin}/${profile.username}`;
+    const url = `${window.location.origin}/${profile.displayName}`;
     navigator.clipboard.writeText(url);
     toast.success("링크 복사 완료!");
   };
@@ -65,10 +68,21 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          {!isLoading && (
+          {!isLoading && !isVisitorPage && (
             <>
               {user && profile ? (
-                <DropdownMenu>
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full h-8 px-2 sm:px-3 shadow-sm transition-colors text-xs"
+                    onClick={() => window.open(`/${profile.displayName}`, '_blank')}
+                    title="내 페이지 바로가기"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="font-medium hidden sm:inline">내 페이지</span>
+                  </Button>
+                  <DropdownMenu>
                   <DropdownMenuTrigger className="relative h-9 w-9 rounded-full border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm p-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                     <img
                       src={profile.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`}
@@ -94,7 +108,7 @@ export function Header() {
                         <LinkIcon className="mr-2.5 h-4 w-4 text-zinc-500" />
                         <span className="font-medium">내 링크 주소 복사</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer py-2.5 px-3 rounded-lg focus:bg-zinc-100 dark:focus:bg-zinc-800" onClick={() => window.open(`/${profile?.username}`, '_blank')}>
+                      <DropdownMenuItem className="cursor-pointer py-2.5 px-3 rounded-lg focus:bg-zinc-100 dark:focus:bg-zinc-800" onClick={() => window.open(`/${profile?.displayName}`, '_blank')}>
                         <ExternalLink className="mr-2.5 h-4 w-4 text-zinc-500" />
                         <span className="font-medium">내 페이지 보기</span>
                       </DropdownMenuItem>
@@ -123,7 +137,8 @@ export function Header() {
                       </DropdownMenuItem>
                     </div>
                   </DropdownMenuContent>
-                </DropdownMenu>
+                  </DropdownMenu>
+                </>
               ) : (
                 <Button
                   onClick={handleLogin}
