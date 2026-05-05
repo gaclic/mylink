@@ -303,9 +303,9 @@ export default function Page() {
     setProfileError("");
     
     try {
-      if (editingField === "displayName" && trimmedValue !== profile.displayName) {
-        // check duplicate display name
-        const q = query(collection(db, "users"), where("displayName", "==", trimmedValue), limit(1));
+      if (editingField === "username" && trimmedValue !== profile.username) {
+        // check duplicate username
+        const q = query(collection(db, "users"), where("username", "==", trimmedValue), limit(1));
         const snapshot = await getDocs(q);
         const duplicateDoc = snapshot.docs.find(d => d.id !== user.uid);
         if (duplicateDoc) {
@@ -315,13 +315,13 @@ export default function Page() {
         }
       }
       
-      if (editingField === "username" && trimmedValue !== profile.username) {
-        // check duplicate username
-        const q = query(collection(db, "users"), where("username", "==", trimmedValue), limit(1));
+      if (editingField === "displayName" && trimmedValue !== profile.displayName) {
+        // check duplicate display name
+        const q = query(collection(db, "users"), where("displayName", "==", trimmedValue), limit(1));
         const snapshot = await getDocs(q);
         const duplicateDoc = snapshot.docs.find(d => d.id !== user.uid);
         if (duplicateDoc) {
-          setProfileError("이미 사용 중인 @username입니다.");
+          setProfileError("이미 사용 중인 @displayname입니다.");
           setIsSavingProfile(false);
           return;
         }
@@ -386,13 +386,13 @@ export default function Page() {
             referrerPolicy="no-referrer"
           />
 
-          {/* Display Name Edit Block */}
-          {editingField === "displayName" ? (
+          {/* Username Edit Block */}
+          {editingField === "username" ? (
             <div className="mt-5 w-full flex flex-col items-center gap-2">
               <Input
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                placeholder="표시 이름"
+                placeholder="이름"
                 className={`text-center font-extrabold max-w-[220px] h-10 text-lg ${profileError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                 autoFocus
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveField(); }}
@@ -409,24 +409,24 @@ export default function Page() {
           ) : (
             <h1 
               className="mt-5 text-2xl tracking-tight font-extrabold text-zinc-900 dark:text-zinc-50 flex items-center justify-center gap-2 cursor-pointer group px-4 py-1 rounded-xl hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50 transition-colors relative"
-              onClick={() => startEditField("displayName", profile.displayName)}
-              title="디스플레이 네임 수정"
+              onClick={() => startEditField("username", profile.username)}
+              title="이름 수정"
             >
-              {profile.displayName || "이름 없음"}
+              {profile.username || "이름 없음"}
               <Pencil className="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all absolute -right-2 top-1/2 -translate-y-1/2" />
             </h1>
           )}
 
-          {/* Username Edit Block */}
-          {editingField === "username" ? (
+          {/* Display Name Edit Block */}
+          {editingField === "displayName" ? (
             <div className="mt-1 w-full flex flex-col items-center gap-2">
               <div className="flex items-center gap-1">
                 <span className="text-zinc-500 font-bold text-sm">@</span>
                 <Input
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="username"
-                  className={`text-center font-medium max-w-[160px] h-8 text-sm placeholder:italic ${profileError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  placeholder="displayname"
+                  className={`text-center font-medium max-w-[160px] h-8 text-[13px] placeholder:italic ${profileError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoFocus
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSaveField(); }}
                 />
@@ -442,11 +442,11 @@ export default function Page() {
             </div>
           ) : (
             <h2
-              className="mt-0.5 text-[15px] font-semibold text-zinc-500 dark:text-zinc-400 flex items-center justify-center gap-1 cursor-pointer group px-3 py-1 rounded-lg hover:bg-zinc-100/50 dark:hover:bg-zinc-800/30 transition-colors relative"
-              onClick={() => startEditField("username", profile.username)}
-              title="유저네임 수정"
+              className="mt-0.5 text-xs font-medium text-zinc-400 opacity-70 dark:text-zinc-500/80 flex items-center justify-center gap-1 cursor-pointer group px-3 py-1 rounded-lg hover:bg-zinc-100/50 dark:hover:bg-zinc-800/30 transition-colors relative"
+              onClick={() => startEditField("displayName", profile.displayName)}
+              title="디스플레이 네임 수정"
             >
-              @{profile.username}
+              @{profile.displayName}
               <Pencil className="w-3 h-3 text-zinc-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all absolute -right-3 top-1/2 -translate-y-1/2" />
             </h2>
           )}
@@ -504,7 +504,7 @@ export default function Page() {
               onClick={() => startEditField("bio", profile.bio)}
               title="소개글 수정"
             >
-              {profile.bio || "소개글을 입력해보세요 ✎"}
+              {profile.bio || "소개글을 입력해보세요"}
               <Pencil className="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all absolute right-0 top-2" />
             </div>
           )}
