@@ -1,0 +1,93 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────
+    // 헬퍼 함수
+    // ─────────────────────────────────────────────────────────────
+
+    // 로그인 여부 확인
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 본인 ID 일치 여부 확인
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 수정 허용 필드 검증 (허용되지 않은 필드 변경 방지)
+    function onlyAllowedFields(allowedFields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // users/{userId} — 프로필 문서
+    // ─────────────────────────────────────────────────────────────
+    match /users/{userId} {
+
+      // 읽기: 누구나 가능 (공개 프로필 페이지용)
+      allow read: if true;
+
+      // 생성: 로그인한 본인만 (최초 프로필 생성, setDoc)
+      allow create: if isOwner(userId)
+        // 본인 uid가 문서 데이터에 포함되어야 함
+        && request.resource.data.uid == request.auth.uid;
+
+      // 수정: 로그인한 본인만, 허용된 필드만 변경 가능
+      // 허용 필드: username, bio, photoURL, updatedAt
+      // 불변 필드: uid, email, displayName, createdAt
+      allow update: if isOwner(userId)
+        && onlyAllowedFields(['username', 'bio', 'photoURL', 'updatedAt'])
+        // uid, email, displayName, createdAt 필드 변경 절대 불가
+        && (!('uid' in request.resource.data.diff(resource.data).affectedKeys()))
+        && (!('displayName' in request.resource.data.diff(resource.data).affectedKeys()))
+        // 필드 값 길이 제한
+        && (
+          !('username' in request.resource.data) ||
+          (request.resource.data.username is string && request.resource.data.username.size() <= 50)
+        )
+        && (
+          !('bio' in request.resource.data) ||
+          (request.resource.data.bio is string && request.resource.data.bio.size() <= 200)
+        );
+
+      // 삭제: 본인만 (계정 삭제 시 사용)
+      allow delete: if isOwner(userId);
+
+      // ─────────────────────────────────────────────────────────────
+      // users/{userId}/links/{linkId} — 링크 서브컬렉션
+      // ─────────────────────────────────────────────────────────────
+      match /links/{linkId} {
+
+        // 읽기: 누구나 가능 (공개 링크 목록)
+        allow read: if true;
+
+        // 생성: 로그인한 본인만
+        // 필드: title (필수, 최대 100자), url (필수, 최대 2048자)
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasAll(['title', 'url', 'createdAt'])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 100
+          && request.resource.data.url is string
+          && request.resource.data.url.size() > 0
+          && request.resource.data.url.size() <= 2048;
+
+        // 수정: 로그인한 본인만, title과 url 및 updatedAt만 변경 가능
+        allow update: if isOwner(userId)
+          && onlyAllowedFields(['title', 'url', 'updatedAt'])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 100
+          && request.resource.data.url is string
+          && request.resource.data.url.size() > 0
+          && request.resource.data.url.size() <= 2048;
+
+        // 삭제: 로그인한 본인만
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

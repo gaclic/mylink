@@ -273,12 +273,12 @@ export default function Page() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Profile Edit State
-  const [editingField, setEditingField] = useState<"displayName" | "username" | "bio" | null>(null);
+  const [editingField, setEditingField] = useState<"username" | "bio" | null>(null);
   const [editValue, setEditValue] = useState("");
   const [profileError, setProfileError] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
-  const startEditField = (field: "displayName" | "username" | "bio", currentValue: string | null) => {
+  const startEditField = (field: "username" | "bio", currentValue: string | null) => {
     setEditingField(field);
     setEditValue(currentValue || "");
     setProfileError("");
@@ -315,17 +315,6 @@ export default function Page() {
         }
       }
       
-      if (editingField === "displayName" && trimmedValue !== profile.displayName) {
-        // check duplicate display name
-        const q = query(collection(db, "users"), where("displayName", "==", trimmedValue), limit(1));
-        const snapshot = await getDocs(q);
-        const duplicateDoc = snapshot.docs.find(d => d.id !== user.uid);
-        if (duplicateDoc) {
-          setProfileError("이미 사용 중인 @displayname입니다.");
-          setIsSavingProfile(false);
-          return;
-        }
-      }
       await updateProfileMutation.mutateAsync({ [editingField]: trimmedValue });
       
       setEditingField(null);
@@ -417,39 +406,10 @@ export default function Page() {
             </h1>
           )}
 
-          {/* Display Name Edit Block */}
-          {editingField === "displayName" ? (
-            <div className="mt-1 w-full flex flex-col items-center gap-2">
-              <div className="flex items-center gap-1">
-                <span className="text-zinc-500 font-bold text-sm">@</span>
-                <Input
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="displayname"
-                  className={`text-center font-medium max-w-[160px] h-8 text-[13px] placeholder:italic ${profileError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                  autoFocus
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveField(); }}
-                />
-              </div>
-              {profileError && <p className="text-xs font-medium text-red-500">{profileError}</p>}
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={handleCancelEdit} disabled={isSavingProfile} className="rounded-lg h-7 px-3 text-xs shadow-sm">취소</Button>
-                <Button type="button" size="sm" onClick={handleSaveField} disabled={isSavingProfile} className="rounded-lg h-7 px-4 text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
-                  {isSavingProfile ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}
-                  저장
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <h2
-              className="mt-0.5 text-xs font-medium text-zinc-400 opacity-70 dark:text-zinc-500/80 flex items-center justify-center gap-1 cursor-pointer group px-3 py-1 rounded-lg hover:bg-zinc-100/50 dark:hover:bg-zinc-800/30 transition-colors relative"
-              onClick={() => startEditField("displayName", profile.displayName)}
-              title="디스플레이 네임 수정"
-            >
-              @{profile.displayName}
-              <Pencil className="w-3 h-3 text-zinc-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all absolute -right-3 top-1/2 -translate-y-1/2" />
-            </h2>
-          )}
+          {/* Display Name (읽기 전용) */}
+          <h2 className="mt-0.5 text-xs font-medium text-zinc-400 opacity-70 dark:text-zinc-500/80">
+            @{profile.displayName}
+          </h2>
 
           {/* Bio Edit Block */}
           {editingField === "bio" ? (
