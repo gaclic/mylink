@@ -24,23 +24,22 @@ const formSchema = z.object({
     .url({ message: "올바른 URL 형식을 입력해주세요. (예: https://...)" }),
 });
 
+import { useGetLinks, useAddLink, useUpdateLink, useDeleteLink } from "@/hooks/useLinksQuery";
+import { useProfileQuery, useUpdateProfileMutation } from "@/hooks/useProfileQuery";
+
 const LinkCardItem = ({
   link,
   index,
   uid,
-  onUpdateLink,
-  onDeleteLink
 }: {
   link: LinkType;
   index: number;
   uid: string;
-  onUpdateLink: (id: string, newTitle: string, newUrl: string) => void;
-  onDeleteLink: (id: string) => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const updateLinkMutation = useUpdateLink(uid);
+  const deleteLinkMutation = useDeleteLink(uid);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,35 +50,22 @@ const LinkCardItem = ({
   });
 
   const onUpdateSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsUpdating(true);
-    try {
-      const linkRef = doc(db, "users", uid, "links", link.id);
-      await updateDoc(linkRef, {
-        title: values.title,
-        url: values.url,
-        updatedAt: serverTimestamp(),
-      });
-      onUpdateLink(link.id, values.title, values.url);
-      setIsEditing(false);
-    } catch (error) {
-      console.error("Error updating document: ", error);
-    } finally {
-      setIsUpdating(false);
-    }
+    updateLinkMutation.mutate(
+      { id: link.id, title: values.title, url: values.url },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+        }
+      }
+    );
   };
 
   const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const linkRef = doc(db, "users", uid, "links", link.id);
-      await deleteDoc(linkRef);
-      onDeleteLink(link.id);
-      setIsDeleteModalOpen(false);
-    } catch (error) {
-      console.error("Error deleting document: ", error);
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteLinkMutation.mutate(link.id, {
+      onSuccess: () => {
+        setIsDeleteModalOpen(false);
+      }
+    });
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
@@ -113,7 +99,7 @@ const LinkCardItem = ({
   // Delete modal rendering alongside the item
   const deleteDialog = (
     <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-      <DialogContent className="sm:max-w-md rounded-2xl border-white/40 dark:border-zinc-800/50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl" showCloseButton={!isDeleting}>
+      <DialogContent className="sm:max-w-md rounded-2xl border-white/40 dark:border-zinc-800/50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl" showCloseButton={!deleteLinkMutation.isPending}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">정말 삭제하시겠습니까?</DialogTitle>
         </DialogHeader>
@@ -124,16 +110,16 @@ const LinkCardItem = ({
           <p className="text-red-500 font-semibold mt-2">이 작업은 되돌릴 수 없습니다.</p>
         </div>
         <DialogFooter className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting} className="rounded-xl border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+          <Button type="button" variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={deleteLinkMutation.isPending} className="rounded-xl border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
             취소
           </Button>
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting}
+            disabled={deleteLinkMutation.isPending}
             className="rounded-xl font-semibold shadow-sm min-w-[80px]"
           >
-            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "삭제하기"}
+            {deleteLinkMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "삭제하기"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -187,7 +173,7 @@ const LinkCardItem = ({
                 type="button"
                 variant="ghost"
                 onClick={handleCancelEdit}
-                disabled={isUpdating}
+                disabled={updateLinkMutation.isPending}
                 className="rounded-lg h-9 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 <X className="w-4 h-4 mr-1" />
@@ -195,10 +181,10 @@ const LinkCardItem = ({
               </Button>
               <Button
                 type="submit"
-                disabled={isUpdating}
+                disabled={updateLinkMutation.isPending}
                 className="rounded-lg h-9 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm font-semibold disabled:opacity-70 min-w-[64px]"
               >
-                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                {updateLinkMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                   <>
                     <Check className="w-4 h-4 mr-1" />
                     저장
@@ -277,11 +263,14 @@ const LinkCardItem = ({
 };
 
 export default function Page() {
-  const { user, profile, isLoading: isUserLoading, setProfile } = useUser();
-  const [links, setLinks] = useState<LinkType[]>([]);
+  const { user, isLoading: isAuthLoading } = useUser();
+  const { data: profile, isLoading: isProfileLoading } = useProfileQuery(user);
+  
+  const { data: links = [], isLoading: isLoadingLinks } = useGetLinks(user?.uid);
+  const addLinkMutation = useAddLink(user?.uid);
+  const updateProfileMutation = useUpdateProfileMutation(user?.uid);
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Profile Edit State
   const [editingField, setEditingField] = useState<"displayName" | "username" | "bio" | null>(null);
@@ -337,17 +326,7 @@ export default function Page() {
           return;
         }
       }
-      
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        [editingField]: trimmedValue,
-        updatedAt: serverTimestamp(),
-      });
-      
-      setProfile({
-        ...profile,
-        [editingField]: trimmedValue,
-      });
+      await updateProfileMutation.mutateAsync({ [editingField]: trimmedValue });
       
       setEditingField(null);
     } catch (error) {
@@ -357,30 +336,6 @@ export default function Page() {
       setIsSavingProfile(false);
     }
   };
-
-  useEffect(() => {
-    if (!user) {
-      setLinks([]);
-      return;
-    }
-    const fetchLinks = async () => {
-      setIsLoading(true);
-      try {
-        const q = query(collection(db, "users", user.uid, "links"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        const fetchedLinks = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as LinkType[];
-        setLinks(fetchedLinks);
-      } catch (error) {
-        console.error("Firestore error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchLinks();
-  }, [user]);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -392,40 +347,18 @@ export default function Page() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
-    setIsSubmitting(true);
-    try {
-      const docRef = await addDoc(collection(db, "users", user.uid, "links"), {
-        title: values.title,
-        url: values.url,
-        createdAt: serverTimestamp(),
-      });
-
-      const newLink: LinkType = {
-        id: docRef.id,
-        title: values.title,
-        url: values.url,
-      };
-
-      setLinks((prev) => [newLink, ...prev]);
-
-      reset();
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error("Error adding document: ", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    addLinkMutation.mutate(
+      { title: values.title, url: values.url },
+      {
+        onSuccess: () => {
+          reset();
+          setIsDialogOpen(false);
+        }
+      }
+    );
   };
 
-  const handleUpdateLink = (id: string, newTitle: string, newUrl: string) => {
-    setLinks(prev => prev.map(link => link.id === id ? { ...link, title: newTitle, url: newUrl } : link));
-  };
-
-  const handleDeleteLink = (id: string) => {
-    setLinks(prev => prev.filter(link => link.id !== id));
-  };
-
-  if (isUserLoading) {
+  if (isAuthLoading || isProfileLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-sky-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
@@ -522,12 +455,38 @@ export default function Page() {
           {editingField === "bio" ? (
             <div className="mt-4 w-full flex flex-col items-center gap-3">
               <textarea
+                ref={(el) => {
+                  if (el) {
+                    el.style.height = "auto";
+                    el.style.height = `${el.scrollHeight}px`;
+                  }
+                }}
                 value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                placeholder="소개글을 입력하세요"
-                className={`w-full max-w-[320px] min-h-[90px] p-3 text-center text-sm rounded-xl border ${profileError ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-200 dark:border-zinc-700'} bg-white dark:bg-zinc-900/50 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm`}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.length <= 200) {
+                    setEditValue(val);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }
+                }}
+                maxLength={200}
+                rows={1}
+                placeholder="소개글을 입력하세요 (최대 200자)"
+                className={`w-full max-w-[320px] min-h-[44px] overflow-hidden p-3 text-center text-sm rounded-xl border ${profileError ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-200 dark:border-zinc-700'} bg-white dark:bg-zinc-900/50 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm`}
                 autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveField();
+                  }
+                }}
               />
+              <div className="w-full max-w-[320px] flex justify-end px-2 -mt-1">
+                <span className={`text-[11px] font-medium tracking-wide ${editValue.length >= 200 ? 'text-red-500' : 'text-zinc-400'}`}>
+                  {editValue.length} / 200
+                </span>
+              </div>
               {profileError && <p className="text-xs font-medium text-red-500 px-4 text-center break-keep">{profileError}</p>}
               <div className="flex gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={handleCancelEdit} disabled={isSavingProfile} className="rounded-lg h-8 px-4 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800">
@@ -598,10 +557,10 @@ export default function Page() {
                 </div>
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={addLinkMutation.isPending}
                   className="mt-2 h-12 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md disabled:opacity-70"
                 >
-                  {isSubmitting ? (
+                  {addLinkMutation.isPending ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
@@ -617,7 +576,7 @@ export default function Page() {
 
         {/* Links Section */}
         <div className="w-full flex flex-col gap-4">
-          {isLoading ? (
+          {isLoadingLinks ? (
             <div className="flex justify-center p-8">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
             </div>
@@ -630,8 +589,6 @@ export default function Page() {
                 link={link}
                 index={index}
                 uid={user.uid}
-                onUpdateLink={handleUpdateLink}
-                onDeleteLink={handleDeleteLink}
               />
             ))
           )}

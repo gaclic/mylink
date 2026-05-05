@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@/hooks/useUser";
+import { useProfileQuery } from "@/hooks/useProfileQuery";
 import { Button } from "@/components/ui/button";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup, signOut } from "firebase/auth";
@@ -20,7 +21,9 @@ import {
 import { toast } from "sonner";
 
 export function Header() {
-  const { user, profile, isLoading } = useUser();
+  const { user, isLoading: isAuthLoading } = useUser();
+  const { data: profile, isLoading: isProfileLoading } = useProfileQuery(user);
+  const isLoading = isAuthLoading || isProfileLoading;
   const { theme, setTheme } = useTheme();
   
   const [mounted, setMounted] = useState(false);

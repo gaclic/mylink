@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/ui/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/components/query-provider";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -25,11 +26,13 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <body>
-        <ThemeProvider>
-          <Header />
-          {children}
-          <Toaster position="top-center" />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <Header />
+            {children}
+            <Toaster position="top-center" />
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   )
