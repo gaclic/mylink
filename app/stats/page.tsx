@@ -12,7 +12,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { LinkIcon, TrendingUp } from "lucide-react";
+import { LinkIcon, TrendingUp, Loader2, Trophy, MousePointerClick } from "lucide-react";
 
 export default function StatsPage() {
   const { user, isLoading: isAuthLoading } = useUser();
@@ -32,7 +32,9 @@ export default function StatsPage() {
     return [...links]
       .sort((a, b) => (b.clickCount || 0) - (a.clickCount || 0)) // 클릭수 많은 순
       .map((link) => ({
+        id: link.id,
         title: link.title || "제목 없음",
+        url: link.url,
         clicks: link.clickCount || 0,
       }));
   }, [links]);
@@ -51,17 +53,19 @@ export default function StatsPage() {
     },
   } satisfies ChartConfig;
 
-  // 인증 로딩 중이거나 사용자가 없으면 빈 화면 반환
+  // 로딩이거나 유저가 없는 경우 빈 화면 반환
   if (isAuthLoading || !user) return <div className="min-h-screen"></div>;
 
   return (
     <div className="container mx-auto p-4 sm:p-6 max-w-4xl space-y-6 pt-10">
-      <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-        통계 대시보드
-      </h1>
+      <div className="flex flex-col items-start gap-2 mb-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 border-b border-zinc-200 dark:border-zinc-800 pb-4 w-full">
+          통계 대시보드
+        </h1>
+      </div>
       
       {/* 요약 카드 목록 */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
         <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">총 클릭 수</CardTitle>
@@ -69,7 +73,7 @@ export default function StatsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">{totalClicks}</div>
-            <p className="text-xs text-zinc-500 mt-1">모든 링크의 총 누적 클릭 수</p>
+            <p className="text-xs text-zinc-500 mt-1">모든 링크의 총 누적 방문수</p>
           </CardContent>
         </Card>
 
@@ -86,14 +90,17 @@ export default function StatsPage() {
       </div>
 
       {/* 차트 */}
-      <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm">
+      <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
         <CardHeader>
           <CardTitle>링크별 클릭수 비교</CardTitle>
           <CardDescription>가장 인기있는 링크를 확인해보세요.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLinksLoading ? (
-            <div className="h-[300px] flex items-center justify-center text-sm text-zinc-500">요청한 데이터를 계산하는 중입니다...</div>
+            <div className="h-[300px] flex items-center justify-center flex-col gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+              <span className="text-sm text-zinc-500">데이터를 불러오는 중입니다...</span>
+            </div>
           ) : chartData.length > 0 ? (
             <ChartContainer config={chartConfig} className="h-[350px] w-full">
               <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
@@ -131,6 +138,74 @@ export default function StatsPage() {
               클릭 통계가 없습니다. 링크를 탭 해보세요!
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* 상세 랭킹 리스트 */}
+      <Card className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-500" />
+            <CardTitle>상세 리스트 랭킹</CardTitle>
+          </div>
+          <CardDescription>클릭수가 가장 많은 순서대로 정리된 링크 목록입니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {isLinksLoading ? (
+              <div className="h-20 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+              </div>
+            ) : chartData.length > 0 ? (
+              chartData.map((link, index) => {
+                let domain = "link";
+                try {
+                  domain = new URL(link.url).hostname;
+                } catch (e) {
+                  // fallback
+                }
+                const faviconUrl = `https://s2.googleusercontent.com/s2/favicons?domain=${domain}&sz=64`;
+                
+                return (
+                  <div key={link.id} className="flex items-center justify-between p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center font-bold text-sm text-zinc-400">
+                        {index + 1}
+                      </div>
+                      <div className="flex-shrink-0">
+                        <img
+                          src={faviconUrl}
+                          alt={`${link.title} icon`}
+                          className="w-8 h-8 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white p-0.5 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-sm">
+                          {link.title}
+                        </span>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-500 dark:text-zinc-400 truncate hover:text-indigo-500 hover:underline">
+                          {link.url}
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm">
+                      <MousePointerClick className="w-3.5 h-3.5 text-indigo-500" />
+                      <span className="font-bold text-sm text-zinc-700 dark:text-zinc-300">
+                        {link.clicks}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-6 text-sm text-zinc-500">
+                표시할 상세 내역이 없습니다.
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
