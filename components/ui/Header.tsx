@@ -5,11 +5,11 @@ import { useProfileQuery } from "@/hooks/useProfileQuery";
 import { Button } from "@/components/ui/button";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup, signOut } from "firebase/auth";
-import { LinkIcon, LogOut, ExternalLink, Moon, Sun } from "lucide-react";
+import { LinkIcon, LogOut, ExternalLink, Moon, Sun, BarChart } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,7 @@ export function Header() {
   const isLoading = isAuthLoading || isProfileLoading;
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
   const isVisitorPage = pathname !== "/";
   
   const [mounted, setMounted] = useState(false);
@@ -111,6 +112,10 @@ export function Header() {
                       <DropdownMenuItem className="cursor-pointer py-2.5 px-3 rounded-lg focus:bg-zinc-100 dark:focus:bg-zinc-800" onClick={() => window.open(`/${profile?.displayName}`, '_blank')}>
                         <ExternalLink className="mr-2.5 h-4 w-4 text-zinc-500" />
                         <span className="font-medium">내 페이지 보기</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer py-2.5 px-3 rounded-lg focus:bg-zinc-100 dark:focus:bg-zinc-800" onClick={() => router.push('/stats')}>
+                        <BarChart className="mr-2.5 h-4 w-4 text-zinc-500" />
+                        <span className="font-medium">통계 보기</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="cursor-pointer py-2.5 px-3 rounded-lg focus:bg-zinc-100 dark:focus:bg-zinc-800"
