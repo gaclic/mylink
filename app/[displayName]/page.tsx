@@ -1,13 +1,18 @@
 "use client";
 
 import { useProfileByDisplayNameQuery } from "@/hooks/useProfileByDisplayNameQuery";
-import { useGetLinks } from "@/hooks/useLinksQuery";
+import { useGetLinks, useIncrementLinkClick } from "@/hooks/useLinksQuery";
 import { notFound, useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Link as LinkType } from "@/data/links";
 
-const VisitorLinkCard = ({ link, index }: { link: LinkType; index: number }) => {
+const VisitorLinkCard = ({ link, index, uid }: { link: LinkType; index: number; uid: string }) => {
+  const incrementMutation = useIncrementLinkClick(uid);
+
+  const handleClick = () => {
+    incrementMutation.mutate(link.id);
+  };
   let domain = "example.com";
   try {
     domain = new URL(link.url).hostname;
@@ -22,6 +27,7 @@ const VisitorLinkCard = ({ link, index }: { link: LinkType; index: number }) => 
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={handleClick}
       className="block w-full outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 rounded-2xl group"
       style={{
         animation: `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both`,
@@ -113,7 +119,7 @@ export default function VisitorPage() {
             <div className="text-center p-8 text-zinc-500 dark:text-zinc-400">아직 추가된 링크가 없습니다.</div>
           ) : (
             links.map((link, index) => (
-              <VisitorLinkCard key={link.id} link={link} index={index} />
+              <VisitorLinkCard key={link.id} link={link} index={index} uid={profile.uid} />
             ))
           )}
         </div>

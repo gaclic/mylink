@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, deleteDoc, increment } from "firebase/firestore";
 import { Link as LinkType } from "@/data/links";
 
 export const linksKeys = {
@@ -34,6 +34,7 @@ export function useAddLink(uid: string | undefined) {
       if (!uid) throw new Error("No user ID");
       const docRef = await addDoc(collection(db, "users", uid, "links"), {
         ...newLink,
+        clickCount: 0,
         createdAt: serverTimestamp(),
       });
       return { id: docRef.id, ...newLink };
@@ -74,7 +75,35 @@ export function useUpdateLink(uid: string | undefined) {
   });
 }
 
-// 4. Delete Link (Mutation)
+// 4. Increment Link Click (Mutation)
+export function useIncrementLinkClick(uid: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!uid) throw new Error("No user ID");
+      const linkRef = doc(db, "users", uid, "links", id);
+      await updateDoc(linkRef, {
+        clickCount: increment(1),
+      });
+      return id;
+    },
+    onSuccess: (updatedId) => {
+      if (uid) {
+        queryClient.setQueryData<LinkType[]>(linksKeys.lists(uid), (oldData) => {
+          if (!oldData) return [];
+          return oldData.map((link) =>
+            link.id === updatedId
+              ? { ...link, clickCount: (link.clickCount || 0) + 1 }
+              : link
+          );
+        });
+      }
+    },
+  });
+}
+
+// 5. Delete Link (Mutation)
 export function useDeleteLink(uid: string | undefined) {
   const queryClient = useQueryClient();
 

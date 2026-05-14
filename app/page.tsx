@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Pencil, Trash2, X, Check } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, X, Check, MousePointerClick } from "lucide-react";
 
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -231,6 +231,12 @@ const LinkCardItem = ({
             <span className="text-center font-semibold text-[15px] tracking-wide text-zinc-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate block">
               {link.title}
             </span>
+          </div>
+
+          {/* Click Count */}
+          <div className="relative z-10 flex items-center pr-3 text-zinc-500 dark:text-zinc-400 shrink-0 gap-1.5" title="클릭 수">
+            <MousePointerClick className="w-4 h-4" />
+            <span className="text-[13px] font-semibold">{link.clickCount || 0}</span>
           </div>
 
           {/* Action Buttons */}

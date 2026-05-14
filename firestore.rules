@@ -73,17 +73,25 @@ service cloud.firestore {
           && request.resource.data.title.size() <= 100
           && request.resource.data.url is string
           && request.resource.data.url.size() > 0
-          && request.resource.data.url.size() <= 2048;
+          && request.resource.data.url.size() <= 2048
+          && (!('clickCount' in request.resource.data) || (request.resource.data.clickCount is number && request.resource.data.clickCount >= 0));
 
-        // 수정: 로그인한 본인만, title과 url 및 updatedAt만 변경 가능
-        allow update: if isOwner(userId)
+        // 수정: 본인이 title, url 등을 수정하거나, 누구나 clickCount를 1 증가시키는 것 허용
+        allow update: if (isOwner(userId)
           && onlyAllowedFields(['title', 'url', 'updatedAt'])
           && request.resource.data.title is string
           && request.resource.data.title.size() > 0
           && request.resource.data.title.size() <= 100
           && request.resource.data.url is string
           && request.resource.data.url.size() > 0
-          && request.resource.data.url.size() <= 2048;
+          && request.resource.data.url.size() <= 2048)
+        || (
+          onlyAllowedFields(['clickCount'])
+          && (
+            (!('clickCount' in resource.data) && request.resource.data.clickCount == 1) ||
+            ('clickCount' in resource.data && request.resource.data.clickCount == resource.data.clickCount + 1)
+          )
+        );
 
         // 삭제: 로그인한 본인만
         allow delete: if isOwner(userId);
