@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Pencil, Trash2, X, Check, MousePointerClick } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, X, Check, Eye } from "lucide-react";
 
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -215,7 +215,7 @@ const LinkCardItem = ({
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-zinc-700/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
 
           {/* Favicon */}
-          <div className="relative z-10 w-12 flex justify-center shrink-0">
+          <div className="relative z-10 w-12 flex justify-center items-center shrink-0">
             <img
               src={faviconUrl}
               alt={`${link.title} icon`}
@@ -227,20 +227,20 @@ const LinkCardItem = ({
           </div>
 
           {/* Title */}
-          <div className="relative z-10 flex-1 flex flex-col justify-center overflow-hidden pr-2">
+          <div className="relative z-10 flex-1 flex flex-col justify-center items-center overflow-hidden pr-2">
             <span className="text-center font-semibold text-[15px] tracking-wide text-zinc-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate block">
               {link.title}
             </span>
           </div>
 
           {/* Click Count */}
-          <div className="relative z-10 flex items-center pr-3 text-zinc-500 dark:text-zinc-400 shrink-0 gap-1.5" title="클릭 수">
-            <MousePointerClick className="w-4 h-4" />
+          <div className="relative z-10 flex items-center justify-center pr-3 text-zinc-500 dark:text-zinc-400 shrink-0 gap-1.5" title="조회 수">
+            <Eye className="w-4 h-4" />
             <span className="text-[13px] font-semibold">{link.clickCount || 0}</span>
           </div>
 
           {/* Action Buttons */}
-          <div className="relative z-10 flex items-center gap-1 shrink-0 bg-white/50 dark:bg-zinc-800/50 sm:bg-transparent sm:dark:bg-transparent p-1 rounded-xl shadow-sm sm:shadow-none backdrop-blur-sm sm:backdrop-blur-none transition-colors">
+          <div className="relative z-10 flex items-center justify-center gap-1 shrink-0 bg-white/50 dark:bg-zinc-800/50 sm:bg-transparent sm:dark:bg-transparent p-1 rounded-xl shadow-sm sm:shadow-none backdrop-blur-sm sm:backdrop-blur-none transition-colors">
             <Button
               type="button"
               variant="ghost"

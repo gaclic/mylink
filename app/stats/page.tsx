@@ -12,7 +12,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { LinkIcon, TrendingUp, Loader2, Trophy, MousePointerClick } from "lucide-react";
+import { LinkIcon, TrendingUp, Loader2, Trophy, Eye } from "lucide-react";
 
 export default function StatsPage() {
   const { user, isLoading: isAuthLoading } = useUser();
@@ -192,7 +192,7 @@ export default function StatsPage() {
                       </div>
                     </div>
                     <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm">
-                      <MousePointerClick className="w-3.5 h-3.5 text-indigo-500" />
+                      <Eye className="w-3.5 h-3.5 text-indigo-500" />
                       <span className="font-bold text-sm text-zinc-700 dark:text-zinc-300">
                         {link.clicks}
                       </span>

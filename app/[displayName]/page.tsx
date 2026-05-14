@@ -38,7 +38,7 @@ const VisitorLinkCard = ({ link, index, uid }: { link: LinkType; index: number; 
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-zinc-700/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
 
         {/* Favicon */}
-        <div className="relative z-10 w-12 flex justify-center shrink-0">
+        <div className="relative z-10 w-12 flex justify-center shrink-0 items-center">
           <img
             src={faviconUrl}
             alt={`${link.title} icon`}
@@ -50,7 +50,7 @@ const VisitorLinkCard = ({ link, index, uid }: { link: LinkType; index: number; 
         </div>
 
         {/* Title */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center overflow-hidden pr-2">
+        <div className="relative z-10 flex-1 flex flex-col justify-center items-center overflow-hidden pr-2">
           <span className="text-center font-semibold text-[15px] tracking-wide text-zinc-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate block">
             {link.title}
           </span>
