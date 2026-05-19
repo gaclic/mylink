@@ -4,22 +4,18 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 type Props = {
-  params: {
+  params: Promise<{
     displayName: string;
-  };
+  }>;
 };
 
 export default async function Image({ params }: Props) {
-  // Promise wrap to support Next.js 14-16 params pattern
-  const resolvedParams = await Promise.resolve(params);
-  const displayName = resolvedParams.displayName;
+  const { displayName } = await params;
   
-  let user = {
-    username: displayName,
-    displayName: displayName,
-    bio: "MyLink에서 링크를 확인해보세요",
-  };
+  let username = displayName;
+  let bio = "모든 링크를 하나의 페이지로";
 
+  // Firestore DB 직접 조회 시도 (실패 시 기본 문구 렌더링)
   try {
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     if (projectId) {
@@ -41,21 +37,18 @@ export default async function Image({ params }: Props) {
               limit: 1
             }
           }),
-          // Next.js ISR (캐시 활용 가능)
           next: { revalidate: 60 }
         }
       );
       
       if (res.ok) {
         const data = await res.json();
-        // firebase struct format parsing
         if (data && data.length > 0 && data[0].document) {
           const fields = data[0].document.fields;
-          user.username = fields.username?.stringValue || displayName;
-          user.bio = fields.bio?.stringValue || "MyLink에서 링크를 확인해보세요";
-          
-          if (user.bio && user.bio.length > 80) {
-              user.bio = user.bio.slice(0, 80) + "...";
+          username = fields.username?.stringValue || displayName;
+          const userBio = fields.bio?.stringValue;
+          if (userBio) {
+            bio = userBio.length > 80 ? userBio.slice(0, 80) + "..." : userBio;
           }
         }
       }
@@ -64,8 +57,8 @@ export default async function Image({ params }: Props) {
     console.error("Error fetching user profile for OG image:", error);
   }
 
-  // avatar image (using dicebear as safe fallback)
-  const avatarUrl = `https://api.dicebear.com/7.x/avataaars/png?seed=${user.username}`;
+  // 텍스트 기호로 아바타 아이콘 대체 (외부 렌더링 에러 방지)
+  const initial = username.charAt(0).toUpperCase();
 
   return new ImageResponse(
     (
@@ -81,6 +74,7 @@ export default async function Image({ params }: Props) {
           backgroundImage: "linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #f0f9ff 100%)",
         }}
       >
+        {/* Blob 배경 데코레이션 (정적 이미지와 통일) */}
         <div style={{
           position: "absolute",
           top: 0,
@@ -100,70 +94,82 @@ export default async function Image({ params }: Props) {
           borderRadius: "300px",
         }} />
         
-        {/* 중앙 카드 형태 - 정적 이미지 톤 매너 유지 */}
+        {/* 중앙 컨텐츠 카드 */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "60px 80px",
+            padding: "80px 120px",
             background: "rgba(255, 255, 255, 0.7)",
             borderRadius: "40px",
             border: "2px solid rgba(255, 255, 255, 0.5)",
             boxShadow: "0 20px 80px rgba(0, 0, 0, 0.08)",
             zIndex: 10,
-            maxWidth: 900,
-            width: "80%"
+            maxWidth: 1000,
+            width: "85%"
           }}
         >
-          <img
-            src={avatarUrl}
-            width={180}
-            height={180}
+          {/* Avatar Area (CSS-based to avoid external image loading issues in Edge) */}
+          <div
             style={{
-              borderRadius: "90px",
-              border: "6px solid #fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "160px",
+              height: "160px",
+              borderRadius: "80px",
+              backgroundColor: "#e0e7ff", // indigo-100
+              border: "8px solid #fff",
               boxShadow: "0 10px 40px rgba(0, 0, 0, 0.12)",
-              objectFit: "cover",
+              fontSize: "72px",
+              fontWeight: 800,
+              color: "#4f46e5", // indigo-600
+              marginBottom: "24px"
             }}
-          />
+          >
+            {initial}
+          </div>
+
           <div
             style={{
               fontSize: 64,
-              fontWeight: 800,
-              color: "#312e81", // indigo 900 (정적 이미지와 통일)
-              marginTop: 36,
+              fontWeight: 900,
+              color: "#312e81", // indigo 900 
+              marginBottom: 12,
               letterSpacing: "-0.05em",
+              textAlign: "center"
             }}
           >
-            {user.username}
+            {username}
           </div>
+          
           <div
             style={{
-              fontSize: 36,
+              fontSize: 32,
               fontWeight: 600,
               color: "#4f46e5", // indigo 600
-              marginTop: 16,
+              letterSpacing: "-0.02em",
+              marginBottom: 24
             }}
           >
-            @{user.displayName}
+            @{displayName}
           </div>
-          {user.bio && (
-            <div
-              style={{
-                fontSize: 28,
-                fontWeight: 500,
-                color: "#6b7280", // gray 500
-                marginTop: 24,
-                textAlign: "center",
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.4,
-              }}
-            >
-              {user.bio}
-            </div>
-          )}
+
+          <div
+            style={{
+              fontSize: 28,
+              fontWeight: 500,
+              color: "#6b7280", // gray 500
+              textAlign: "center",
+              whiteSpace: "pre-wrap",
+              lineHeight: 1.5,
+              maxWidth: "800px"
+            }}
+          >
+            {bio}
+          </div>
         </div>
       </div>
     ),
