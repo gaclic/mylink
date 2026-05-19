@@ -3,7 +3,15 @@ import { ImageResponse } from "next/og";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default async function Image({ params }: { params: { displayName: string } }) {
+type Props = {
+  params: Promise<{
+    displayName: string;
+  }>;
+};
+
+export default async function Image(props: Props) {
+  // Next.js 최신 런타임에 맞춰 params를 비동기로 해결해야 값이 정상적으로 들어옵니다.
+  const params = await props.params;
   const displayName = params.displayName;
 
   return new ImageResponse(
@@ -22,23 +30,13 @@ export default async function Image({ params }: { params: { displayName: string 
       >
         <div
           style={{
-            fontSize: 100,
+            fontSize: 96,
             fontWeight: 800,
             color: "#312e81",
             letterSpacing: "-0.05em",
-            marginBottom: 20,
           }}
         >
-          {displayName}
-        </div>
-        <div
-          style={{
-            fontSize: 48,
-            fontWeight: 600,
-            color: "#4f46e5",
-          }}
-        >
-          님의 링크 모음
+          {displayName}님의 MyLink
         </div>
       </div>
     ),
