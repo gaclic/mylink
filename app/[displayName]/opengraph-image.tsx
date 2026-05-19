@@ -3,6 +3,27 @@ import { ImageResponse } from "next/og";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+// 한글(CJK) 텍스트가 OG 이미지 에지 환경에서 렌더링되지 않거나 깨지는 것을 방지하기 위해 폰트 주입
+async function loadGoogleFont() {
+  const url = "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap";
+  // WOFF2를 피하고 TTF 포맷을 받기 위한 오래된 User-Agent 스푸핑
+  const cssRes = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
+    },
+  });
+  const css = await cssRes.text();
+  const fontUrl = css.match(/src: url\((.+)\) format\('(opentype|truetype)'\)/);
+
+  if (fontUrl) {
+    const fontRes = await fetch(fontUrl[1]);
+    return await fontRes.arrayBuffer();
+  }
+  return null;
+}
+
+// 명시적으로 타입을 분리 (Next.js 14, 15+ 모두 안전 호환되는 구조)
 type Props = {
   params: Promise<{
     displayName: string;
@@ -10,9 +31,10 @@ type Props = {
 };
 
 export default async function Image(props: Props) {
-  // Next.js 최신 런타임에 맞춰 params를 비동기로 해결해야 값이 정상적으로 들어옵니다.
   const params = await props.params;
-  const displayName = params.displayName;
+  const displayName = params.displayName || "공유";
+  
+  const fontData = await loadGoogleFont();
 
   return new ImageResponse(
     (
@@ -31,8 +53,9 @@ export default async function Image(props: Props) {
         <div
           style={{
             fontSize: 96,
-            fontWeight: 800,
+            fontWeight: 700,
             color: "#312e81",
+            fontFamily: fontData ? '"NotoSansKR"' : "sans-serif",
             letterSpacing: "-0.05em",
           }}
         >
@@ -42,6 +65,16 @@ export default async function Image(props: Props) {
     ),
     {
       ...size,
+      fonts: fontData
+        ? [
+            {
+              name: "NotoSansKR",
+              data: fontData,
+              style: "normal",
+              weight: 700,
+            },
+          ]
+        : undefined,
     }
   );
 }
