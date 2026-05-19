@@ -1,4 +1,5 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { Metadata } from "next";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -13,6 +14,21 @@ const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+export const metadata: Metadata = {
+  title: {
+    template: "%s | MyLink",
+    default: "MyLink | 멀티링크 프로필 서비스",
+  },
+  description: "내 모든 링크를 한 곳에서 관리하고 공유하세요.",
+  openGraph: {
+    title: "MyLink | 멀티링크 프로필 서비스",
+    description: "내 모든 링크를 한 곳에서 관리하고 공유하세요.",
+    siteName: "MyLink",
+    locale: "ko_KR",
+    type: "website",
+  },
+};
 
 export default function RootLayout({
   children,
