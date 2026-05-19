@@ -38,7 +38,7 @@ export default async function Image({ params }: { params: { displayName: string 
             color: "#4f46e5",
           }}
         >
-          MyLink 프로필
+          님의 링크 모음
         </div>
       </div>
     ),
